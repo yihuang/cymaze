@@ -25,8 +25,12 @@ ext_modules = [ Extension(
 
 setup(
     name = 'cymaze',
-    version = '1.0.3',
+    version = '1.0.0',
     ext_modules = ext_modules,
+    package_data={'cymaze': [
+        "c_maze.h",
+        "README.rst",
+    ]},
     author='huangyi',
     author_email='yi.codeplayer@gmail.com',
     url = 'https://github.com/yihuang/cymaze',
