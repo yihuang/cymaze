@@ -3,14 +3,24 @@ cdef extern from "c_maze.h":
     ctypedef int (*fn_randint) (int)
     void set_randint(fn_randint fn)
 
-    ctypedef struct MazeDefine
+    ctypedef struct MazeDefine:
+        unsigned char* g_Maze
+        int NumCells
+        int g_PtX
+        int g_PtY
+
     MazeDefine* newMaze(int numCells)
     void freeMaze(MazeDefine *m)
     void GenerateMaze(MazeDefine *m)
     void RenderMaze( MazeDefine *m, unsigned char* img, int ImageSize )
     void SaveBMP( const char* FileName, const void* RawBGRImage, int Width, int Height )
 
-cdef extern void test()
+    cpdef enum eDirection:
+        eDirection_Invalid
+        eDirection_Up
+        eDirection_Right
+        eDirection_Down
+        eDirection_Left
 
 import random
 
@@ -24,11 +34,27 @@ cdef class Maze(object):
 
     def __cinit__(self, int numCells):
         self.m = newMaze(numCells)
-        test()
 
     def __dealloc__(self):
         freeMaze(self.m)
         self.m = NULL
+
+    property maze:
+        def __get__(self):
+            cdef int size = self.m.NumCells*self.m.NumCells
+            cdef bytearray ba = bytearray(size)
+            cdef int i
+            for i in range(size):
+                ba[i] = self.m.g_Maze[i] & 0x0f
+            return ba
+
+    property size:
+        def __get__(self):
+            return self.m.NumCells
+
+    property pos:
+        def __get__(self):
+            return (self.m.g_PtX, self.m.g_PtY)
 
     def generate(self):
         GenerateMaze(self.m)

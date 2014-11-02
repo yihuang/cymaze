@@ -110,16 +110,9 @@ void GenerateMaze(MazeDefine *m)
     memset(m->g_Maze, 0, m->NumCells* m->NumCells);
     m->g_PtX = randint(m->NumCells-1);
     m->g_PtY = randint(m->NumCells-1);
-    printf("new starting point %d %d\n", m->g_PtX, m->g_PtY);
 
-	int Cells = 0;
 	for ( eDirection Dir = GetDirection(m); Dir != eDirection_Invalid; Dir = GetDirection(m) )
 	{
-		if ( ++Cells % 1000 == 0 ) {
-            printf(".");
-            fflush(stdout);
-        }
-
 		m->g_Maze[ CellIdx(m) ] |= Dir;
 
 		m->g_PtX += Heading_X[ Dir ];
@@ -127,15 +120,16 @@ void GenerateMaze(MazeDefine *m)
 
 		m->g_Maze[ CellIdx(m) ] = Mask[ Dir ];
 	}
-    printf("\n");
 }
 
 void Line( unsigned char* img, int x1, int y1, int x2, int y2, int ImageSize )
 {
+    y1 = ImageSize - y1 -1;
+    y2 = ImageSize - y2 -1;
 	if ( x1 == x2 )
 	{
 		// vertical line
-		for ( int y = y1; y < y2; y++ )
+		for ( int y = y1; y > y2; y-- )
 		{
 			if ( x1 >= ImageSize || y >= ImageSize ) continue;
 			int i = 3 * ( y * ImageSize + x1 );
@@ -234,7 +228,7 @@ void SaveBMP( const char* FileName, const void* RawBGRImage, int Width, int Heig
     fclose(fp);
 }
 
-void test() {
+static void test() {
     for(int i=0; i<1000; i++) {
         printf("%d\n", randint(3));
     }

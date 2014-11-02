@@ -1,5 +1,7 @@
 import cymaze
 m = cymaze.Maze(63)
-for i in range(100):
-    m.generate()
-    m.save_bmp('/tmp/test%d.bmp'%i, 512)
+m.generate()
+data = m.maze
+m.save_bmp('/tmp/test.bmp', 512)
+import os
+os.system('open /tmp/test.bmp')
