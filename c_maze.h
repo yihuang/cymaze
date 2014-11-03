@@ -15,11 +15,11 @@ typedef struct {
 
 typedef enum
 {
-	eDirection_Invalid = 0,
-	eDirection_Up      = 1,
-	eDirection_Right   = 2,
-	eDirection_Down    = 4,
-	eDirection_Left    = 8
+    eDirection_Invalid = 0,
+    eDirection_Up      = 1,
+    eDirection_Right   = 2,
+    eDirection_Down    = 4,
+    eDirection_Left    = 8
 }eDirection;
 
 void set_randint(fn_randint fn);
