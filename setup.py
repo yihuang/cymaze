@@ -9,15 +9,15 @@ except ImportError:
     have_cython = False
 
 if have_cython:
-    pymaze_files = ["maze.pyx"]
+    cymaze_files = ["cymaze.pyx"]
     cmdclass = {'build_ext': build_ext}
 else:
-    pymaze_files = ["maze.c"]
+    cymaze_files = ["cymaze.c"]
     cmdclass = {}
 
 ext_modules = [ Extension(
                     "cymaze",
-                    pymaze_files + ['c_maze.c'],
+                    cymaze_files + ['c_maze.c'],
                     include_dirs=["."],
                     extra_compile_args=['--std=c99'],
                 )
