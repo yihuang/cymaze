@@ -1,14 +1,17 @@
 typedef int(*fn_randint)(int);
 
 typedef struct {
-    int NumCells;
+    int x, y;
+} V2;
+
+typedef struct {
+    V2 cellSize;
 
     // current traversing position
-    int g_PtX;
-    int g_PtY;
+    V2 pos;
 
-    unsigned char* g_Maze;
-} MazeDefine;
+    unsigned char* data;
+} Maze;
 
 typedef enum
 {
@@ -20,8 +23,8 @@ typedef enum
 }eDirection;
 
 void set_randint(fn_randint fn);
-MazeDefine* newMaze(int numCells);
-void freeMaze(MazeDefine *m);
-void GenerateMaze(MazeDefine *m);
-void RenderMaze( MazeDefine *m, unsigned char* img, int ImageSize );
-void SaveBMP( const char* FileName, const void* RawBGRImage, int Width, int Height );
+Maze* new_maze(V2 cellSize);
+void free_maze(Maze *m);
+void gen_maze(Maze *m);
+void render_maze( Maze *m, unsigned char* img, V2 imageSize );
+void save_maze( Maze *m, const char* FileName, V2 imageSize );

@@ -24,29 +24,34 @@ void set_randint(fn_randint fn) {
     randint = fn;
 }
 
-void initMaze(MazeDefine *m, int numCells) {
-    memset(m, 0, sizeof(MazeDefine));
-    m->NumCells = numCells;
-    m->g_Maze = (unsigned char*)malloc( m->NumCells* m->NumCells );
+void initMaze(Maze *m, V2 cellSize) {
+    memset(m, 0, sizeof(Maze));
+    m->cellSize = cellSize;
+    m->data = (unsigned char*)malloc( m->cellSize.x * m->cellSize.y );
 }
 
-MazeDefine* newMaze(int numCells) {
-    MazeDefine *m = (MazeDefine*)malloc(sizeof(MazeDefine));
-    initMaze(m, numCells);
+Maze* new_maze(V2 cellSize) {
+    Maze *m = (Maze*)malloc(sizeof(Maze));
+    initMaze(m, cellSize);
     return m;
 }
 
-void freeMaze(MazeDefine *m) {
-    if (m->g_Maze) {
-        free(m->g_Maze);
+void free_maze(Maze *m) {
+    if (m->data) {
+        free(m->data);
     }
     free(m);
 }
 
-// return the current index in m->g_Maze
-int CellIdx(MazeDefine *m)
+// return the current index in m->data
+//int CellIdx(Maze *m)
+//{
+//	return m->pos.x + m->cellSize.x * m->pos.y;
+//}
+
+int CellIdx(Maze *m, V2 p)
 {
-	return m->g_PtX + m->NumCells * m->g_PtY;
+    return p.x + m->cellSize.x * p.y;
 }
 
 //                   0  1  2  3  4  5  6  7  8
@@ -68,17 +73,17 @@ int Mask[9]      = {
 
 ////////////////////////////////////////////////////////////////////////////
 
-int IsDirValid( MazeDefine *m, eDirection Dir )
+int IsDirValid( Maze *m, eDirection Dir )
 {
-	int NewX = m->g_PtX + Heading_X[ Dir ];
-	int NewY = m->g_PtY + Heading_Y[ Dir ];
+    V2 newPos = {m->pos.x + Heading_X[ Dir ], m->pos.y + Heading_Y[ Dir ]};
 
-	if ( !Dir || NewX < 0 || NewY < 0 || NewX >= m->NumCells || NewY >= m->NumCells ) return 0;
+	if ( !Dir || newPos.x < 0 || newPos.y < 0 || newPos.x >= m->cellSize.x || newPos.y >= m->cellSize.y )
+        return 0;
 
-	return m->g_Maze[ NewX + m->NumCells * NewY ] == 0;
+	return m->data[ CellIdx(m, newPos) ] == 0;
 }
 
-eDirection GetDirection(MazeDefine *m)
+eDirection GetDirection(Maze *m)
 {
 	eDirection Dir = (eDirection) (1 << randint(3));
 
@@ -93,46 +98,46 @@ eDirection GetDirection(MazeDefine *m)
 			if ( Dir > eDirection_Left ) { Dir = eDirection_Up; }
 		}
 
-		Dir = (eDirection) (( m->g_Maze[ CellIdx(m) ] & 0xf0 ) >> 4);
+		Dir = (eDirection) (( m->data[ CellIdx(m, m->pos) ] & 0xf0 ) >> 4);
 
 		// nowhere to go
 		if ( !Dir ) return eDirection_Invalid;
 
-		m->g_PtX += Heading_X[ Dir ];
-		m->g_PtY += Heading_Y[ Dir ];
+		m->pos.x += Heading_X[ Dir ];
+		m->pos.y += Heading_Y[ Dir ];
 
 		Dir = (eDirection) (1 << randint(3));
 	}
 }
 
-void GenerateMaze(MazeDefine *m)
+void gen_maze(Maze *m)
 {
-    memset(m->g_Maze, 0, m->NumCells* m->NumCells);
-    m->g_PtX = randint(m->NumCells-1);
-    m->g_PtY = randint(m->NumCells-1);
+    memset(m->data, 0, m->cellSize.x * m->cellSize.y);
+    m->pos.x = randint(m->cellSize.x-1);
+    m->pos.y = randint(m->cellSize.y-1);
 
 	for ( eDirection Dir = GetDirection(m); Dir != eDirection_Invalid; Dir = GetDirection(m) )
 	{
-		m->g_Maze[ CellIdx(m) ] |= Dir;
+		m->data[ CellIdx(m, m->pos) ] |= Dir;
 
-		m->g_PtX += Heading_X[ Dir ];
-		m->g_PtY += Heading_Y[ Dir ];
+		m->pos.x += Heading_X[ Dir ];
+		m->pos.y += Heading_Y[ Dir ];
 
-		m->g_Maze[ CellIdx(m) ] = Mask[ Dir ];
+		m->data[ CellIdx(m, m->pos) ] = Mask[ Dir ];
 	}
 }
 
-void Line( unsigned char* img, int x1, int y1, int x2, int y2, int ImageSize )
+void Line( unsigned char* img, int x1, int y1, int x2, int y2, V2 ImageSize )
 {
-    y1 = ImageSize - y1 -1;
-    y2 = ImageSize - y2 -1;
+    y1 = ImageSize.y - y1 -1;
+    y2 = ImageSize.y - y2 -1;
 	if ( x1 == x2 )
 	{
 		// vertical line
 		for ( int y = y1; y > y2; y-- )
 		{
-			if ( x1 >= ImageSize || y >= ImageSize ) continue;
-			int i = 3 * ( y * ImageSize + x1 );
+			if ( x1 >= ImageSize.x || y >= ImageSize.y ) continue;
+			int i = 3 * ( y * ImageSize.x + x1 );
 			img[ i + 2 ] = img[ i + 1 ] = img[ i + 0 ] = 255;
 		}
 	}
@@ -142,29 +147,29 @@ void Line( unsigned char* img, int x1, int y1, int x2, int y2, int ImageSize )
 		// horizontal line
 		for ( int x = x1; x < x2; x++ )
 		{
-			if ( y1 >= ImageSize || x >= ImageSize ) continue;
-			int i = 3 * ( y1 * ImageSize + x );
+			if ( y1 >= ImageSize.y || x >= ImageSize.x ) continue;
+			int i = 3 * ( y1 * ImageSize.x + x );
 			img[ i + 2 ] = img[ i + 1 ] = img[ i + 0 ] = 255;
 		}
 	}
 }
 
-void RenderMaze( MazeDefine *m, unsigned char* img, int ImageSize )
+void render_maze( Maze *m, unsigned char* img, V2 ImageSize )
 {
-    int CellSize = ImageSize / m->NumCells;
-	for ( int y = 0; y < m->NumCells; y++ )
+    V2 CellSize = { ImageSize.x / m->cellSize.x, ImageSize.y / m->cellSize.y };
+	for ( int y = 0; y < m->cellSize.y; y++ )
 	{
-		for ( int x = 0; x < m->NumCells; x++ )
+		for ( int x = 0; x < m->cellSize.x; x++ )
 		{
-			unsigned char v = m->g_Maze[ y * m->NumCells + x ];
+			unsigned char v = m->data[ y * m->cellSize.x + x ];
 
-			int nx = x * CellSize;
-			int ny = y * CellSize;
+			int nx = x * CellSize.x;
+			int ny = y * CellSize.y;
 
-			if ( !( v & eDirection_Up    ) ) Line( img, nx,            ny,            nx + CellSize + 1, ny                , ImageSize);
-			if ( !( v & eDirection_Right ) ) Line( img, nx + CellSize, ny,            nx + CellSize,     ny + CellSize + 1 , ImageSize);
-			if ( !( v & eDirection_Down  ) ) Line( img, nx,            ny + CellSize, nx + CellSize + 1, ny + CellSize     , ImageSize);
-			if ( !( v & eDirection_Left  ) ) Line( img, nx,            ny,            nx,                ny + CellSize + 1 , ImageSize);
+			if ( !( v & eDirection_Up    ) ) Line( img, nx,              ny,              nx + CellSize.x + 1, ny                  , ImageSize);
+			if ( !( v & eDirection_Right ) ) Line( img, nx + CellSize.x, ny,              nx + CellSize.x,     ny + CellSize.y + 1 , ImageSize);
+			if ( !( v & eDirection_Down  ) ) Line( img, nx,              ny + CellSize.y, nx + CellSize.x + 1, ny + CellSize.y     , ImageSize);
+			if ( !( v & eDirection_Left  ) ) Line( img, nx,              ny,              nx,                  ny + CellSize.y + 1 , ImageSize);
 		}
 	}
 }
@@ -199,11 +204,13 @@ struct GCC_PACK( 1 ) sBMPHeader
 };
 #pragma pack(pop)
 
-void SaveBMP( const char* FileName, const void* RawBGRImage, int Width, int Height )
+void save_maze( Maze *m, const char* FileName, V2 imageSize )
 {
 	struct sBMPHeader Header;
 
-	int ImageSize = Width * Height * 3;
+	int ImageSize = imageSize.x * imageSize.y * 3;
+    unsigned char* RawBGRImage = (unsigned char*)malloc(ImageSize);
+    render_maze(m, RawBGRImage, imageSize);
 
 	Header.bfType = 0x4D * 256 + 0x42;
 	Header.bfSize = ImageSize + sizeof( struct sBMPHeader );
@@ -211,8 +218,8 @@ void SaveBMP( const char* FileName, const void* RawBGRImage, int Width, int Heig
 	Header.bfReserved2 = 0;
 	Header.bfOffBits = 0x36;
 	Header.biSize = 40;
-	Header.biWidth = Width;
-	Header.biHeight = Height;
+	Header.biWidth = imageSize.x;
+	Header.biHeight = imageSize.y;
 	Header.biPlanes = 1;
 	Header.biBitCount = 24;
 	Header.biCompression = 0;
@@ -226,27 +233,4 @@ void SaveBMP( const char* FileName, const void* RawBGRImage, int Width, int Heig
     fwrite(( const char* )&Header, 1,  sizeof( Header ), fp );
     fwrite(( const char* )RawBGRImage, 1, ImageSize, fp );
     fclose(fp);
-}
-
-static void test() {
-    for(int i=0; i<1000; i++) {
-        printf("%d\n", randint(3));
-    }
-}
-
-static int main() {
-    srand(time(NULL));
-
-    MazeDefine *m = newMaze(63);
-    GenerateMaze(m);
-
-    int ImageSize = 512;
-    unsigned char* img = (unsigned char*)malloc(3*ImageSize*ImageSize);
-    memset(img, 0, 3*ImageSize*ImageSize);
-    RenderMaze(m, img, ImageSize);
-
-	SaveBMP( "Maze.bmp", img, ImageSize, ImageSize );
-    free(img);
-
-    freeMaze(m);
 }
