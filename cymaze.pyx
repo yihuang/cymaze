@@ -42,8 +42,9 @@ cdef class Maze(object):
         self.m = new_maze(csize)
 
     def __dealloc__(self):
-        free_maze(self.m)
-        self.m = NULL
+        if self.m != NULL:
+            free_maze(self.m)
+            self.m = NULL
 
     property data:
         def __get__(self):
