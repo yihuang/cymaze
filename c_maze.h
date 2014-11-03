@@ -5,7 +5,7 @@ typedef struct {
 } V2;
 
 typedef struct {
-    V2 cellSize;
+    V2 maze_size;
 
     // current traversing position
     V2 pos;
@@ -23,8 +23,8 @@ typedef enum
 }eDirection;
 
 void set_randint(fn_randint fn);
-Maze* new_maze(V2 cellSize);
+Maze* new_maze(V2 maze_size);
 void free_maze(Maze *m);
 void gen_maze(Maze *m);
-void render_maze( Maze *m, unsigned char* img, V2 imageSize );
-void save_maze( Maze *m, const char* FileName, V2 imageSize );
+void render_maze( Maze *m, unsigned char* img, V2 image_size );
+void save_maze( Maze *m, const char* FileName, V2 image_size );

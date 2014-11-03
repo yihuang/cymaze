@@ -24,15 +24,15 @@ void set_randint(fn_randint fn) {
     randint = fn;
 }
 
-void initMaze(Maze *m, V2 cellSize) {
+void init_maze(Maze *m, V2 maze_size) {
     memset(m, 0, sizeof(Maze));
-    m->cellSize = cellSize;
-    m->data = (unsigned char*)malloc( m->cellSize.x * m->cellSize.y );
+    m->maze_size = maze_size;
+    m->data = (unsigned char*)malloc( m->maze_size.x * m->maze_size.y );
 }
 
-Maze* new_maze(V2 cellSize) {
+Maze* new_maze(V2 maze_size) {
     Maze *m = (Maze*)malloc(sizeof(Maze));
-    initMaze(m, cellSize);
+    init_maze(m, maze_size);
     return m;
 }
 
@@ -43,15 +43,9 @@ void free_maze(Maze *m) {
     free(m);
 }
 
-// return the current index in m->data
-//int CellIdx(Maze *m)
-//{
-//	return m->pos.x + m->cellSize.x * m->pos.y;
-//}
-
-int CellIdx(Maze *m, V2 p)
+int cellidx(Maze *m, V2 p)
 {
-    return p.x + m->cellSize.x * p.y;
+    return p.x + m->maze_size.x * p.y;
 }
 
 //                   0  1  2  3  4  5  6  7  8
@@ -73,103 +67,117 @@ int Mask[9]      = {
 
 ////////////////////////////////////////////////////////////////////////////
 
-int IsDirValid( Maze *m, eDirection Dir )
+int is_valid_dir( Maze *m, eDirection dir )
 {
-    V2 newPos = {m->pos.x + Heading_X[ Dir ], m->pos.y + Heading_Y[ Dir ]};
+    V2 newPos = {m->pos.x + Heading_X[ dir ], m->pos.y + Heading_Y[ dir ]};
 
-	if ( !Dir || newPos.x < 0 || newPos.y < 0 || newPos.x >= m->cellSize.x || newPos.y >= m->cellSize.y )
+	if ( !dir || newPos.x < 0 || newPos.y < 0 || newPos.x >= m->maze_size.x || newPos.y >= m->maze_size.y )
         return 0;
 
-	return m->data[ CellIdx(m, newPos) ] == 0;
+	return m->data[ cellidx(m, newPos) ] == 0;
 }
 
-eDirection GetDirection(Maze *m)
+eDirection get_direction(Maze *m)
 {
-	eDirection Dir = (eDirection) (1 << randint(3));
+	eDirection dir = (eDirection) (1 << randint(3));
 
 	while ( 1 )
 	{
 		for ( int x = 0; x < 4; x++ )
 		{
-			if ( IsDirValid( m, Dir ) ) { return (eDirection)Dir; }
+			if ( is_valid_dir( m, dir ) ) { return (eDirection)dir; }
 
-			Dir = (eDirection) (Dir << 1);
+			dir = (eDirection) (dir << 1);
 
-			if ( Dir > eDirection_Left ) { Dir = eDirection_Up; }
+			if ( dir > eDirection_Left ) { dir = eDirection_Up; }
 		}
 
-		Dir = (eDirection) (( m->data[ CellIdx(m, m->pos) ] & 0xf0 ) >> 4);
+		dir = (eDirection) (( m->data[ cellidx(m, m->pos) ] & 0xf0 ) >> 4);
 
 		// nowhere to go
-		if ( !Dir ) return eDirection_Invalid;
+		if ( !dir ) return eDirection_Invalid;
 
-		m->pos.x += Heading_X[ Dir ];
-		m->pos.y += Heading_Y[ Dir ];
+		m->pos.x += Heading_X[ dir ];
+		m->pos.y += Heading_Y[ dir ];
 
-		Dir = (eDirection) (1 << randint(3));
+		dir = (eDirection) (1 << randint(3));
 	}
 }
 
 void gen_maze(Maze *m)
 {
-    memset(m->data, 0, m->cellSize.x * m->cellSize.y);
-    m->pos.x = randint(m->cellSize.x-1);
-    m->pos.y = randint(m->cellSize.y-1);
+    memset(m->data, 0, m->maze_size.x * m->maze_size.y);
+    m->pos.x = randint(m->maze_size.x-1);
+    m->pos.y = randint(m->maze_size.y-1);
 
-	for ( eDirection Dir = GetDirection(m); Dir != eDirection_Invalid; Dir = GetDirection(m) )
+	for ( eDirection dir = get_direction(m); dir != eDirection_Invalid; dir = get_direction(m) )
 	{
-		m->data[ CellIdx(m, m->pos) ] |= Dir;
+		m->data[ cellidx(m, m->pos) ] |= dir;
 
-		m->pos.x += Heading_X[ Dir ];
-		m->pos.y += Heading_Y[ Dir ];
+		m->pos.x += Heading_X[ dir ];
+		m->pos.y += Heading_Y[ dir ];
 
-		m->data[ CellIdx(m, m->pos) ] = Mask[ Dir ];
+		m->data[ cellidx(m, m->pos) ] = Mask[ dir ];
 	}
 }
 
-void Line( unsigned char* img, int x1, int y1, int x2, int y2, V2 ImageSize )
+void line( unsigned char* img, int x1, int y1, int x2, int y2, V2 image_size )
 {
-    y1 = ImageSize.y - y1 -1;
-    y2 = ImageSize.y - y2 -1;
+    y1 = image_size.y - y1 -1;
+    y2 = image_size.y - y2 -1;
 	if ( x1 == x2 )
 	{
+        if (x1 >= image_size.x)
+            x1 = image_size.x - 1;
+        if (y2 < 0)
+            y2 = 0;
+
 		// vertical line
 		for ( int y = y1; y > y2; y-- )
 		{
-			if ( x1 >= ImageSize.x || y >= ImageSize.y ) continue;
-			int i = 3 * ( y * ImageSize.x + x1 );
+			if ( x1 >= image_size.x || y >= image_size.y )
+                continue;
+			int i = 3 * ( y * image_size.x + x1 );
 			img[ i + 2 ] = img[ i + 1 ] = img[ i + 0 ] = 255;
 		}
 	}
 
 	if ( y1 == y2 )
 	{
+        if (x2 >= image_size.x)
+            x2 = image_size.x - 1;
+        if (y1 < 0)
+            y1 = 0;
+
 		// horizontal line
 		for ( int x = x1; x < x2; x++ )
 		{
-			if ( y1 >= ImageSize.y || x >= ImageSize.x ) continue;
-			int i = 3 * ( y1 * ImageSize.x + x );
+			int i = 3 * ( y1 * image_size.x + x );
 			img[ i + 2 ] = img[ i + 1 ] = img[ i + 0 ] = 255;
 		}
 	}
 }
 
-void render_maze( Maze *m, unsigned char* img, V2 ImageSize )
+void render_maze( Maze *m, unsigned char* img, V2 image_size )
 {
-    V2 CellSize = { ImageSize.x / m->cellSize.x, ImageSize.y / m->cellSize.y };
-	for ( int y = 0; y < m->cellSize.y; y++ )
+    V2 cell_size = { image_size.x / m->maze_size.x, image_size.y / m->maze_size.y };
+    if (cell_size.x <= 0 || cell_size.y <= 0) {
+        return;
+    }
+	for ( int y = 0; y < m->maze_size.y; y++ )
 	{
-		for ( int x = 0; x < m->cellSize.x; x++ )
+		for ( int x = 0; x < m->maze_size.x; x++ )
 		{
-			unsigned char v = m->data[ y * m->cellSize.x + x ];
+            V2 p = {x, y};
+			unsigned char v = m->data[ cellidx(m, p) ];
 
-			int nx = x * CellSize.x;
-			int ny = y * CellSize.y;
+			int nx = x * cell_size.x;
+			int ny = y * cell_size.y;
 
-			if ( !( v & eDirection_Up    ) ) Line( img, nx,              ny,              nx + CellSize.x + 1, ny                  , ImageSize);
-			if ( !( v & eDirection_Right ) ) Line( img, nx + CellSize.x, ny,              nx + CellSize.x,     ny + CellSize.y + 1 , ImageSize);
-			if ( !( v & eDirection_Down  ) ) Line( img, nx,              ny + CellSize.y, nx + CellSize.x + 1, ny + CellSize.y     , ImageSize);
-			if ( !( v & eDirection_Left  ) ) Line( img, nx,              ny,              nx,                  ny + CellSize.y + 1 , ImageSize);
+			if ( !( v & eDirection_Up    ) ) line( img, nx,               ny,               nx + cell_size.x + 1, ny                   , image_size);
+			if ( !( v & eDirection_Right ) ) line( img, nx + cell_size.x, ny,               nx + cell_size.x,     ny + cell_size.y + 1 , image_size);
+			if ( !( v & eDirection_Down  ) ) line( img, nx,               ny + cell_size.y, nx + cell_size.x + 1, ny + cell_size.y     , image_size);
+			if ( !( v & eDirection_Left  ) ) line( img, nx,               ny,               nx,                   ny + cell_size.y + 1 , image_size);
 		}
 	}
 }
@@ -204,33 +212,33 @@ struct GCC_PACK( 1 ) sBMPHeader
 };
 #pragma pack(pop)
 
-void save_maze( Maze *m, const char* FileName, V2 imageSize )
+void save_maze( Maze *m, const char* filename, V2 image_size )
 {
-	struct sBMPHeader Header;
+	struct sBMPHeader header;
 
-	int ImageSize = imageSize.x * imageSize.y * 3;
-    unsigned char* RawBGRImage = (unsigned char*)malloc(ImageSize);
-    render_maze(m, RawBGRImage, imageSize);
+	int buf_size = image_size.x * image_size.y * 3;
+    unsigned char* buf = (unsigned char*)malloc(buf_size);
+    render_maze(m, buf, image_size);
 
-	Header.bfType = 0x4D * 256 + 0x42;
-	Header.bfSize = ImageSize + sizeof( struct sBMPHeader );
-	Header.bfReserved1 = 0;
-	Header.bfReserved2 = 0;
-	Header.bfOffBits = 0x36;
-	Header.biSize = 40;
-	Header.biWidth = imageSize.x;
-	Header.biHeight = imageSize.y;
-	Header.biPlanes = 1;
-	Header.biBitCount = 24;
-	Header.biCompression = 0;
-	Header.biSizeImage = ImageSize;
-	Header.biXPelsPerMeter = 6000;
-	Header.biYPelsPerMeter = 6000;
-	Header.biClrUsed = 0;
-	Header.biClrImportant = 0;
+	header.bfType = 0x4D * 256 + 0x42;
+	header.bfSize = buf_size + sizeof( struct sBMPHeader );
+	header.bfReserved1 = 0;
+	header.bfReserved2 = 0;
+	header.bfOffBits = 0x36;
+	header.biSize = 40;
+	header.biWidth = image_size.x;
+	header.biHeight = image_size.y;
+	header.biPlanes = 1;
+	header.biBitCount = 24;
+	header.biCompression = 0;
+	header.biSizeImage = buf_size;
+	header.biXPelsPerMeter = 6000;
+	header.biYPelsPerMeter = 6000;
+	header.biClrUsed = 0;
+	header.biClrImportant = 0;
 
-    FILE* fp = fopen(FileName, "wb");
-    fwrite(( const char* )&Header, 1,  sizeof( Header ), fp );
-    fwrite(( const char* )RawBGRImage, 1, ImageSize, fp );
+    FILE* fp = fopen(filename, "wb");
+    fwrite(( const char* )&header, 1,  sizeof( header ), fp );
+    fwrite(( const char* )buf, 1, buf_size, fp );
     fclose(fp);
 }

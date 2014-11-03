@@ -7,11 +7,11 @@ cdef extern from "c_maze.h":
         int x,y
 
     ctypedef struct CMaze "Maze":
-        V2 cellSize;
+        V2 maze_size;
         V2 pos;
         unsigned char* data;
 
-    CMaze* new_maze(V2 cellSize)
+    CMaze* new_maze(V2 maze_size)
     void free_maze(CMaze *m)
     void gen_maze(CMaze *m)
     void render_maze( CMaze *m, unsigned char* img, V2 imageSize )
@@ -34,7 +34,7 @@ set_randint(<fn_randint>randint)
 cdef class Maze(object):
     cdef CMaze* m
 
-    def __cinit__(self, tuple size):
+    def __cinit__(self, size):
         cdef V2 csize
         csize.x = size[0]
         csize.y = size[1]
@@ -48,7 +48,7 @@ cdef class Maze(object):
 
     property data:
         def __get__(self):
-            cdef int size = self.m.cellSize.x*self.m.cellSize.y
+            cdef int size = self.m.maze_size.x*self.m.maze_size.y
             cdef bytearray ba = bytearray(size)
             cdef int i
             for i in range(size):
@@ -57,7 +57,7 @@ cdef class Maze(object):
 
     property size:
         def __get__(self):
-            return (self.m.cellSize.x, self.m.cellSize.y)
+            return (self.m.maze_size.x, self.m.maze_size.y)
 
     property pos:
         def __get__(self):
@@ -66,14 +66,14 @@ cdef class Maze(object):
     def generate(self):
         gen_maze(self.m)
 
-    def render(self, unsigned char[:] buf, tuple size):
+    def render(self, unsigned char[:] buf, size):
         cdef V2 csize
         csize.x = size[0]
         csize.y = size[1]
         assert len(buf) == csize.x*csize.y*3
         render_maze(self.m, &buf[0], csize)
 
-    def save_bmp(self, bytes filename, tuple size):
+    def save_bmp(self, bytes filename, size):
         cdef V2 csize
         csize.x = size[0]
         csize.y = size[1]
