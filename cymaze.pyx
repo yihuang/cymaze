@@ -45,7 +45,7 @@ cdef class Maze(object):
         free_maze(self.m)
         self.m = NULL
 
-    property maze:
+    property data:
         def __get__(self):
             cdef int size = self.m.cellSize.x*self.m.cellSize.y
             cdef bytearray ba = bytearray(size)
